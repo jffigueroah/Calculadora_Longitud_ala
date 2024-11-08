@@ -2,31 +2,255 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Longitud de un Ala</title>
+    <title>Calculadora Aerodinámica de Ala</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-section, .results-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .help-text {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 2px;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        .results-section {
+            display: none;
+            background-color: #f8f9fa;
+        }
+        .results-visible {
+            display: block;
+        }
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        .error {
+            color: #d32f2f;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        #wingVisualization {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Calculadora de Longitud de un Ala</h1>
-    <p>Ingresa los valores y obtén la longitud de una sola ala en centímetros.</p>
+    <div class="container">
+        <h1>Calculadora Aerodinámica de Ala</h1>
+        
+        <div class="input-section">
+            <h2>Parámetros de Entrada</h2>
+            
+            <div class="input-group">
+                <label for="cuerda">Cuerda del ala (cm):</label>
+                <input type="number" id="cuerda" step="0.1" min="0" required>
+                <div class="help-text">Distancia desde el borde de ataque hasta el borde de salida</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="espesor">Espesor máximo del perfil (cm):</label>
+                <input type="number" id="espesor" step="0.1" min="0" required>
+                <div class="help-text">Máximo grosor del perfil alar</div>
+            </div>
+            
+            <div class="input-group">
+                <label for="ar">Relación de Aspecto (AR):</label>
+                <input type="number" id="ar" step="0.1" min="0" value="6" required>
+                <div class="help-text">Típicamente entre 6 y 10 para aviones pequeños</div>
+            </div>
 
-    <label for="envergadura">Envergadura total del ala (en metros):</label>
-    <input type="number" id="envergadura" step="0.01"><br><br>
+            <div class="input-group">
+                <label for="taper">Relación de Estrechamiento:</label>
+                <input type="number" id="taper" step="0.1" min="0" max="1" value="1" required>
+                <div class="help-text">1 para ala rectangular, menor a 1 para ala trapezoidal</div>
+            </div>
+            
+            <button onclick="calcularDimensiones()">Calcular Dimensiones</button>
+        </div>
 
-    <button onclick="calcularLongitudAla()">Calcular Longitud de una Sola Ala</button>
+        <div id="results" class="results-section">
+            <h2>Resultados del Análisis</h2>
+            
+            <div class="result-item">
+                <strong>Longitud de una sola ala (Semi-envergadura):</strong>
+                <span id="semispan">0</span> cm
+            </div>
+            
+            <div class="result-item">
+                <strong>Área del ala (una sola ala):</strong>
+                <span id="area">0</span> cm²
+            </div>
+            
+            <div class="result-item">
+                <strong>Eficiencia aerodinámica estimada:</strong>
+                <span id="efficiency">0</span>
+            </div>
 
-    <h2>Resultado:</h2>
-    <p id="resultado"></p>
+            <canvas id="wingVisualization" width="600" height="300"></canvas>
+        </div>
+    </div>
 
     <script>
-        function calcularLongitudAla() {
-            const envergadura = parseFloat(document.getElementById("envergadura").value);
-            if (isNaN(envergadura) || envergadura <= 0) {
-                document.getElementById("resultado").innerText = "Por favor ingresa un valor válido para la envergadura.";
+        function calcularDimensiones() {
+            // Obtener valores de entrada
+            const cuerda = parseFloat(document.getElementById('cuerda').value);
+            const espesor = parseFloat(document.getElementById('espesor').value);
+            const ar = parseFloat(document.getElementById('ar').value);
+            const taper = parseFloat(document.getElementById('taper').value);
+            
+            // Validaciones
+            if (!validarEntradas(cuerda, espesor, ar, taper)) {
                 return;
             }
-            // Calcula la longitud de una sola ala en metros, luego convierte a cm
-            const longitudAla = (envergadura / 2) * 100;
-            document.getElementById("resultado").innerText = `La longitud de una sola ala es: ${longitudAla.toFixed(2)} cm`;
+
+            // Cálculos aerodinámicos
+            // Semi-envergadura basada en AR y cuerda
+            const semispan = Math.sqrt((ar * cuerda * cuerda) / 2);
+            
+            // Área de una sola ala
+            const area = semispan * cuerda * (1 + taper) / 2;
+            
+            // Eficiencia aerodinámica aproximada (Oswald efficiency factor)
+            const e = calcularEficiencia(ar, taper, espesor/cuerda);
+
+            // Mostrar resultados
+            document.getElementById('semispan').textContent = semispan.toFixed(1);
+            document.getElementById('area').textContent = area.toFixed(1);
+            document.getElementById('efficiency').textContent = e.toFixed(2);
+            
+            // Mostrar sección de resultados
+            document.getElementById('results').classList.add('results-visible');
+            
+            // Dibujar visualización
+            dibujarAla(semispan, cuerda, taper);
+        }
+
+        function validarEntradas(cuerda, espesor, ar, taper) {
+            if (isNaN(cuerda) || isNaN(espesor) || isNaN(ar) || isNaN(taper)) {
+                alert('Por favor, ingrese todos los valores numéricos requeridos');
+                return false;
+            }
+            
+            if (cuerda <= 0 || espesor <= 0 || ar <= 0) {
+                alert('Todos los valores deben ser mayores que 0');
+                return false;
+            }
+
+            if (taper <= 0 || taper > 1) {
+                alert('La relación de estrechamiento debe estar entre 0 y 1');
+                return false;
+            }
+
+            if (espesor > cuerda) {
+                alert('El espesor no puede ser mayor que la cuerda');
+                return false;
+            }
+
+            return true;
+        }
+
+        function calcularEficiencia(ar, taper, thicknessRatio) {
+            // Oswald efficiency factor aproximado
+            let e = 1.78 * (1 - 0.045 * Math.pow(ar, 0.68)) - 0.64;
+            
+            // Ajuste por estrechamiento
+            e *= (0.8 + 0.2 * taper);
+            
+            // Ajuste por relación de espesor
+            e *= (1 - 0.2 * thicknessRatio);
+            
+            return Math.min(Math.max(e, 0.5), 0.95); // Limitar entre 0.5 y 0.95
+        }
+
+        function dibujarAla(semispan, cuerda, taper) {
+            const canvas = document.getElementById('wingVisualization');
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Escalar dimensiones para ajustar al canvas
+            const scale = Math.min(
+                (canvas.width * 0.8) / (2 * semispan),
+                (canvas.height * 0.8) / cuerda
+            );
+            
+            // Posición central
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Dibujar ala
+            ctx.beginPath();
+            ctx.moveTo(centerX - scale * semispan, centerY - scale * cuerda / 2);
+            ctx.lineTo(centerX + scale * semispan, centerY - scale * cuerda * taper / 2);
+            ctx.lineTo(centerX + scale * semispan, centerY + scale * cuerda * taper / 2);
+            ctx.lineTo(centerX - scale * semispan, centerY + scale * cuerda / 2);
+            ctx.closePath();
+            
+            // Estilo
+            ctx.fillStyle = '#e3f2fd';
+            ctx.fill();
+            ctx.strokeStyle = '#1976D2';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Dibujar línea central
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(centerX - scale * semispan, centerY);
+            ctx.lineTo(centerX + scale * semispan, centerY);
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.setLineDash([]);
         }
     </script>
 </body>
