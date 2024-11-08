@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Longitud de un Ala</title>
+</head>
+<body>
+    <h1>Calculadora de Longitud de un Ala</h1>
+    <p>Ingresa los valores y obtén la longitud de una sola ala en centímetros.</p>
+
+    <label for="envergadura">Envergadura total del ala (en metros):</label>
+    <input type="number" id="envergadura" step="0.01"><br><br>
+
+    <button onclick="calcularLongitudAla()">Calcular Longitud de una Sola Ala</button>
+
+    <h2>Resultado:</h2>
+    <p id="resultado"></p>
+
+    <script>
+        function calcularLongitudAla() {
+            const envergadura = parseFloat(document.getElementById("envergadura").value);
+            if (isNaN(envergadura) || envergadura <= 0) {
+                document.getElementById("resultado").innerText = "Por favor ingresa un valor válido para la envergadura.";
+                return;
+            }
+            // Calcula la longitud de una sola ala en metros, luego convierte a cm
+            const longitudAla = (envergadura / 2) * 100;
+            document.getElementById("resultado").innerText = `La longitud de una sola ala es: ${longitudAla.toFixed(2)} cm`;
+        }
+    </script>
+</body>
+</html>
